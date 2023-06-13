@@ -3,9 +3,7 @@ package org.example;
 import com.opencsv.exceptions.CsvValidationException;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -83,115 +81,102 @@ public class Comuna {
         }
     }
 
-    public void generateFirstSolution(ArrayList<Integer[]>solutions, ArrayList<Comuna>comunas)
-    {
-        while(solutions.size()<100)
+    public void generateFirstSolution(ArrayList<Integer[]>solutions, ArrayList<Comuna>comunas) {
+        while(solutions.size()<100)                             // GENERO 100 SOLUCIONES INFACTIBLES
         {
-            Integer[]solution = new Integer[comunas.size()];
-            solutions.add(newSolution(solution, comunas));
+            Integer[]solution = new Integer[comunas.size()];    // INICIALIZA LA SOLUCIÓN
+            solutions.add(newSolution(solution, comunas));      // AÑADE UNA SOLUCIÓN
         }
     }
 
-    public Integer[] bestSolution(ArrayList<Integer[]>solutions,ArrayList<Comuna>comunas)
-    {
-        Integer[] firstSolution = null;
-        double firstCoste = 0;
-        int i=0;
-        for(Integer[]solution: solutions)
+    public Integer[] newSolution(Integer[]solution, ArrayList<Comuna>comunas){
+        Random rn = new Random();                       // INICIALIZO RN TIPO RANDOM
+        double alfa = 0.66;                              // DAMOS UNA PROBABILIDAD ALFA
+        for (int i = 0; i < solution.length; i++)       // RECORREMOS EL TAMAÑO DE NUESTRO ARREGLO
         {
-            if(i==0)
-            {
-                firstSolution = solution;
-                firstCoste = valueCost(solution, comunas);
-                i++;
-            } else if (valueCost(solution, comunas)<firstCoste) {
-                firstSolution = solution;
-                firstCoste = valueCost(solution, comunas);
+            double beta = rn.nextDouble();
+            if(beta>alfa){                              // VEMOS SI EL NÚMERO SACADO RANDÓMICAMENTE ES MENOR A NUESTRO ALFA
+                solution[i] = 1;                        // ES 1 SI ES MENOR
+            }else{
+                solution[i] = 0;                        // 0 SI NO LO ES
             }
         }
-        return firstSolution;
+        validSolution(solution,comunas);                // TRANSFORMAR LA SOLUCIÓN A ÓPTIMA
+        return solution;                                // RETORNO LA SOLUCIÓN ÓPTIMA
     }
 
-    public Integer[] secondBestSolution(ArrayList<Integer[]>solutions,ArrayList<Comuna>comunas, Integer[]firstsolution)
-    {
-        Integer[] secondSolution = null;
-        double secondCost = 0;
-        int i=0;
-        for(Integer[]solution: solutions)
+    public Integer[] bestSolution(ArrayList<Integer[]>solutions,ArrayList<Comuna>comunas) {
+        Integer[] firstSolution = null;                 // INICIAR LA SELECCIÓN DE SOLUCIÓN COMO NULL
+        double firstCoste = 0;                          // INICIAR EL MEJOR COSTE EN 0
+        int i=0;                                        // INICIAR I EN 0
+        for(Integer[]solution: solutions)               // RECORRER NUESTRO ARREGLO DE SOLUCIONES
         {
-            if(!firstsolution.equals(solution))
+            if(i==0)                                    // SI I ES 0, NUESTRA MEJOR SOLUCIÓN ES LA PRIMERA SOLUCIÓN GUARDADA
             {
-                if(i==0)
-                {
-                    secondSolution = solution;
-                    secondCost = valueCost(solution, comunas);
-                    i++;
-                } else if (valueCost(solution, comunas)<secondCost && i>0) {
-                    secondSolution = solution;
-                    secondCost = valueCost(solution, comunas);
-                }
+                firstSolution = solution;               // PRIMERA SOLUCIÓN ES IGUAL A LA PRIMERA SOLUCIÓN
+                firstCoste = valueCost(solution, comunas);  // PRIMER COSTE ES EL COSTE DE LA PRIMERA SOLUCIÓN
+                i++;                                        // I+1
+            } else if (valueCost(solution, comunas)<firstCoste) {   // VEMOS SI OTRA SOLUCIÓN ES MEJOR A NUESTRA MEJOR SOLUCIÓN
+                firstSolution = solution;                           // REMPLAZAMOS
+                firstCoste = valueCost(solution, comunas);          // REMPLAZAMOS
             }
-
         }
-        return secondSolution;
+        return firstSolution;                                       // RETORNAMOS LA MEJOR SOLUCIÓN
     }
 
-    public Integer[] crossParents(Integer[] father, Integer[] mother, ArrayList<Comuna>comunas)
-    {
-        ArrayList<Integer[]>sons = new ArrayList<>(10);
-        int random;
-        int i=0;
-        while(i<10)
+    public ArrayList<Integer[]>selectParentsToCross(ArrayList<Integer[]>solutions, ArrayList<Comuna>comunas, int sampleSize) {
+        ArrayList<Integer[]> parents = solutions;                   // COPIAMOS A PADRES LAS SOLUCIONES
+        bubbleSortInteger(parents,comunas);                         // ORDENAMOS NUESTRO ARREGLO DE SOLUCIONES DE MEJOR A PEOR
+        parents.subList(sampleSize,solutions.size()).clear();       // CORTAMOS NUESTRO ARREGLO DE PADRES A UN TAMAÑO DETERMINADO
+        return parents;                                             // RETORNAMOS LOS PADRES
+    }
+
+    public Integer[] parentsRandom(ArrayList<Integer[]>parents, ArrayList<Comuna>comunas) {
+        Integer[] father;                                                   // INSTANCIAMOS FATHER
+        Integer[] mother;                                                   // INSTANCIAMOS MOTHER
+        int cont=0;                                                         // INSTANCIAMOS CONTADOR
+        Random rn = new Random();                                           // INSTANCIAMOS RANDOM
+        father=parents.get(rn.nextInt(parents.size()));                     // SACAMOS A UN PADRE DE MANERA ALEATORIA Y LO ALMACENAMOS EN FATHER
+        do{                                                                 // DO-WHILE MIENTRAS LOS PADRES SEAN IGUALES O CONTADOR SEA MENOR A 50
+            mother=parents.get(rn.nextInt(parents.size()));                 // SACAMOS UNA MADRE DE MANERA ALEATORIA Y LO ALMACENAMOS EN MOTHER
+            cont++;                                                         // AUMENTAMOS CONTADOR PARA NO QUEDAR EN UN BUCLE EN CASO DE QUE TOME UN MISMO PADRE 100 VECES
+        }while(father.equals(mother)&&cont<100);                            // DO-WHILE FIN
+        return crossParents(father,mother,comunas);                         // RETORNAMOS LA CRUZA DE LOS PADRES.
+    }
+
+    public Integer[] crossParents(Integer[] father, Integer[] mother, ArrayList<Comuna>comunas) {
+        ArrayList<Integer[]>sons = new ArrayList<>(2);           // CREAMOS UN ARREGLO DE HIJOS DE TAMAÑO 2 QUE VA A SER LA MEZCLA DE LOS DOS PADRES
+        Random rn = new Random();                                            // INSTANCIAMO RANDOM
+        int random =  rn.nextInt(father.length);                             // RANDOM SERÁ UN NÚMERO ALEATORIO PARA CRUZAR LOS PADRES
+        int temp;                                                            // VARIABLE TEMPORAL
+        Integer[] copyF, copyM;                                              // VARIABLES PARA COPIAR AL PADRE Y LA MADRE
+        copyF=father;                                                        // COPIAMOS AL PADRE EN COPYF
+        copyM=mother;                                                        // COPIAMOS A LA MADRE EN COPYM
+        for(int j=random; j< father.length;j++)                              // VOY DESDE EL NÚMERO ALEATORIO HASTA EL TAMAÑO DE LA SOLUCIÓN
         {
-            for(int parents=0;parents<2;parents++)
-            {
-                random = (int)(Math.random()*(father.length - 1)+1);
-                Integer[]son= new Integer[father.length];
-
-                for(int posParent1=0;posParent1<random;posParent1++)
-                {
-                    if(parents==0)
-                    {
-                        son[posParent1]=father[posParent1];
-                    }else
-                    {
-                        son[posParent1]=mother[posParent1];
-                    }
-
-                }
-                for(int posParent2=random;posParent2<father.length;posParent2++) {
-                    if (parents == 0) {
-                        son[posParent2] = mother[posParent2];
-                    } else {
-                        son[posParent2] = father[posParent2];
-                    }
-                }
-                sons.add(son);
-            }
-            i++;
+            temp = copyF[j];                                                 // PERMUTO LA POSICIÓN
+            copyF[j]=copyM[j];                                               // DEL PADRE A LA MADRE
+            copyM[j]=temp;                                                   // Y VICEVERSA
         }
-
-
-        return bestSolution(sons,comunas);
+        sons.add(copyF);                                                     // AGREGO AL PADRE CRUZADO CON LA MADRE
+        sons.add(copyM);                                                     // AGREGO LA MADRE CRUZADO CON EL PADRE
+        return bestSolution(sons,comunas);                                   // RETORNAMOS EL MEJOR
     }
 
-    public void mutateSon(Integer[]son, ArrayList<Comuna>comunas)
-    {
-        validSolution(son, comunas);
+    public void mutateSon(Integer[]son, ArrayList<Comuna>comunas) {
+        validSolution(son, comunas);                    // CONVIERTO A LOS HIJOS NUEVAMENTE EN UNA SOLUCIÓN FACTIBLE
     }
 
-    public void getBetterSolutions(ArrayList<Integer[]>solutions,ArrayList<Integer[]>solutionsNewGenaration,ArrayList<Comuna>comunas)
-    {
-        solutions.addAll(solutionsNewGenaration);
-        bubbleSortInteger(solutions, comunas);
-        solutions.subList(50,solutions.size()).clear();
+    public void getBetterSolutions(ArrayList<Integer[]>solutions,ArrayList<Integer[]>solutionsNewGenaration,ArrayList<Comuna>comunas, int sampleSize) {
+        solutions.addAll(solutionsNewGenaration);                           // AGREGA LA NUEVA GENERACIÓN DE SOLUCIONES EN DE SOLUCIONES
+        bubbleSortInteger(solutions, comunas);                              // ORDENAMOS DE MAYOR A MENOR LAS SOLUCIONES
+        solutions.subList(sampleSize,solutions.size()).clear();             // REALIZAMOS EL CORTE AL TAMAÑO QUE LE ASIGNEMOS
     }
 
-    public void bubbleSortInteger(ArrayList<Integer[]>solutions, ArrayList<Comuna>comunas)
-    {
-        for(int i=0; i<solutions.size()-1;i++)
+    public void bubbleSortInteger(ArrayList<Integer[]>solutions, ArrayList<Comuna>comunas) {
+        for(int i=0; i<solutions.size()-1;i++)                                                  // APLICAMOS BUBBLE SORT PARA ORDENAR EL ARREGLO
         {
-            for(int j=0; j<solutions.size()-1-i;j++)
+            for(int j=0; j<solutions.size()-1-i;j++)                                            // VALIDANDO QUE SOLUCIONES SON MÁS FACTIBLES Y COLOCANDOLAS AL PRINCIPIO
             {
                 if(valueCost(solutions.get(j),comunas)>valueCost(solutions.get(j+1), comunas))
                 {
@@ -203,178 +188,126 @@ public class Comuna {
         }
     }
 
-    public Integer[] getBestSolution(ArrayList<Integer[]>solutions, ArrayList<Comuna>comunas)
-    {
-        Integer[] bestSolutionArray =null;
-        double bestCost=0;
-        for(int i=0;i<solutions.size(); i++)
+    public Integer[] getBestSolution(ArrayList<Integer[]>solutions, ArrayList<Comuna>comunas) {
+        Integer[] bestSolutionArray =null;                                                              // INICIAMOS UN INTEGER[] PARA ALMACENAR LA MEJOR SOLUCIÓN
+        double bestCost=0;                                                                              // INICIAMOS BESTCOST PARA ALMACENAR EL MEJOR COSTO
+        for(int i=0;i<solutions.size(); i++)                                                            // RECORRO TODO NUESTRO ARREGLO DE SOLUCIONES
         {
-            if(i==0)
+            if(i==0)                                                                                    // VÁLIDO SI ES EL PRIMER DATO
             {
-                bestSolutionArray = solutions.get(i);
-                bestCost = valueCost(solutions.get(i), comunas);
-            }else if(valueCost(solutions.get(i), comunas)<bestCost)
+                bestSolutionArray = solutions.get(i);                                                   // GUARDO MEJOR SOLUCIÓN
+                bestCost = valueCost(solutions.get(i), comunas);                                        // GUARDO EL COSTE
+            }else if(valueCost(solutions.get(i), comunas)<bestCost)                                     // VEO SI EL COSTE SACADO ES MEJOR AL QUE YA TENÍAMOS
             {
-                bestSolutionArray = solutions.get(i);
-                bestCost = valueCost(solutions.get(i), comunas);
+                bestSolutionArray = solutions.get(i);                                                   // GUARDO EN MEJOR SOLUCIÓN
+                bestCost = valueCost(solutions.get(i), comunas);                                        // GUARDO EN MEJOR COSTE
             }
         }
-        return bestSolutionArray;
+        return bestSolutionArray;                                                                       // RETORNO LA MEJOR SOLUCIÓN
     }
-
-    public Integer[] newSolution(Integer[]solution, ArrayList<Comuna>comunas){
-        Random rn = new Random();
-        double alfa = 0.3;
-        for (int i = 0; i < solution.length; i++)
-        {
-            if(rn.nextDouble()<alfa){
-                solution[i] = 1;
-            }else{
-                solution[i] = 0;
-            }
-        }
-        validSolution(solution,comunas);
-        return solution;
-    }
-
 
     public void validSolution(Integer[]solution, ArrayList<Comuna>comunas) {
-        int cont, mejorPos = -1;
+        int cont, mejorPos, number;
+        double mejorCoste, costeNuev;
         Random rn = new Random();
-        double mejorCoste, costeNuev = -1;
-        boolean flag;
-            for (int i = 0; i < comunas.size(); i++)                                      //recorro todas las comunas
+        number = rn.nextInt(solution.length);
+        for(int i=number; i<comunas.size();i++)
+        {
+            cont=0;
+            for(int j=0; j<comunas.get(i).comunasColindantes.size();j++)
             {
-                Comuna currentCommune = comunas.get(i);                             // tomo la comuna actual
-                if (solution[1] == 1) {                                                 // valido si en la posición hay antena
-                    flag = false;
-                    mejorCoste = 99999;
-                    mejorPos = -1;
-                    for (int j = 0; j < currentCommune.comunasColindantes.size(); j++)  // voy recorriendo el array de comunas vecinas
+                for(int k = 0; k<comunas.size();k++)
+                {
+                    if(comunas.get(k).id==comunas.get(i).comunasColindantes.get(j))
                     {
-                        for (int k = 0; k < comunas.size(); k++) {
-                            if (comunas.get(k).id == currentCommune.comunasColindantes.get(j)) {
-                                if (solution[k] == 1) flag = true;
-                                break;
-                            }
-                        }
-                        if (flag) break;
-                    }
-                    while (!flag) {
-                        mejorPos = rn.nextInt(currentCommune.comunasColindantes.size());
-                        for (int j = 0; j < currentCommune.comunasColindantes.size(); j++)  // voy recorriendo el array de comunas vecinas
+                        if(solution[k]==1)
                         {
-                            for (int k = 0; k < comunas.size(); k++)                          // recorro todo el arreglo comunas para encontrar el la comuna vecina
-                            {
-                                if (comunas.get(k).id == currentCommune.comunasColindantes.get(j)) //  verifico si la id de la comuna es igual a la la id de las comunas vecinas
-                                {
-                                    Comuna neighbor = comunas.get(k);
-                                    for (int y = 0; y < neighbor.comunasColindantes.size(); y++)      //  recorro toda la colección de de vecinos de la comuna vecina
-                                    {
-
-                                        for (int h = 0; h < comunas.size(); h++)                      // recorro comunas para ver la id del vecino del vecino
-                                        {
-                                            if (comunas.get(h).id == neighbor.comunasColindantes.get(y))   // si el coincide la id del vecino
-                                            {
-                                                if (!comunas.get(h).equals(comunas.get(k)))             // valido si el vecino del vecino no es mi comuna que estoy recorriendo
-                                                {
-                                                    if (solution[h] == 1)                                  // si tiene un 1 alguna de sus vecinos
-                                                    {
-                                                        flag = true;                                      // activo la bandera de que si tiene al menos un vecino con antena
-                                                        costeNuev = comunas.get(h).costo / comunas.get(h).comunasColindantes.size();  // saco el coste del vecino
-                                                        if (costeNuev < mejorCoste)                                                    // comparo con el mejor coste
-                                                        {
-                                                            mejorCoste = costeNuev;                                                   // remplazo
-                                                            mejorPos = h;                                                             // remplazo
-                                                        }
-                                                    }
-                                                    break;
-                                                }
-                                            }
-
-                                        }
-                                        if (flag) break;
-                                    }
-
-                                }
-                            }
-
+                            cont++;
+                            break;
                         }
-                        if (!flag) {
-                            solution[rn.nextInt(currentCommune.comunasColindantes.size())] = 1;
-                            flag = true;
-                        } else {
-                            solution[mejorPos] = 1;
-                        }
-
-                    }
-                } else {
-                    cont = 0;
-                    for (int j = 0; j < currentCommune.comunasColindantes.size(); j++) {
-                        for (int k = 0; k < comunas.size(); k++) {
-                            if (comunas.get(k).id == currentCommune.comunasColindantes.get(j)) {
-                                if (solution[k] == 1) {
-                                    cont++;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    if (cont == 0) {
-                        mejorCoste = comunas.get(i).costo / comunas.get(i).comunasColindantes.size();
-                        mejorPos = i;
-                        for (int j = 0; j < currentCommune.comunasColindantes.size(); j++) {
-                            for (int k = 0; k < comunas.size(); k++) {
-                                if (currentCommune.comunasColindantes.get(j) == comunas.get(k).id) {
-                                    costeNuev = comunas.get(k).costo / comunas.get(k).comunasColindantes.size();
-                                    if (costeNuev < mejorCoste) {
-                                        mejorCoste = costeNuev;
-                                        mejorPos = k;
-                                    }
-                                }
-                            }
-                        }
-                        solution[mejorPos] = 1;
-                    } else if (cont == 1 && currentCommune.comunasColindantes.size() > cont) {
-                        solution[i] = 1;
                     }
                 }
-
             }
+            if(cont==0)
+            {
+                mejorCoste = comunas.get(i).costo / comunas.get(i).comunasColindantes.size();
+                mejorPos = i;
+                for(int j=0;j<comunas.get(i).comunasColindantes.size();j++)
+                {
+                    for(int k = 0; k<comunas.size();k++)
+                    {
+                        if(comunas.get(k).id==comunas.get(i).comunasColindantes.get(j))
+                        {
+                            costeNuev = comunas.get(k).costo / comunas.get(k).comunasColindantes.size();
+                            if(costeNuev < mejorCoste)
+                            {
+                                mejorCoste = costeNuev;
+                                mejorPos = k;
+
+                            }
+                            break;
+                        }
+                    }
+                }
+                solution[mejorPos]=1;
+            }
+
+        }
+
+        for(int i=number; i>-1;i--)
+        {
+            cont=0;
+            for(int j=0; j<comunas.get(i).comunasColindantes.size();j++)
+            {
+                for(int k = 0; k<comunas.size();k++)
+                {
+                    if(comunas.get(k).id==comunas.get(i).comunasColindantes.get(j))
+                    {
+                        if(solution[k]==1)
+                        {
+                            cont++;
+                            break;
+                        }
+                    }
+                }
+            }
+            if(cont==0)
+            {
+                mejorCoste = comunas.get(i).costo / comunas.get(i).comunasColindantes.size();
+                mejorPos = i;
+                for(int j=0;j<comunas.get(i).comunasColindantes.size();j++)
+                {
+                    for(int k = 0; k<comunas.size();k++)
+                    {
+                        if(comunas.get(k).id==comunas.get(i).comunasColindantes.get(j))
+                        {
+                            costeNuev = comunas.get(k).costo / comunas.get(k).comunasColindantes.size();
+                            if(costeNuev < mejorCoste)
+                            {
+                                mejorCoste = costeNuev;
+                                mejorPos = k;
+
+                            }
+                            break;
+                        }
+                    }
+                }
+                solution[mejorPos]=1;
+            }
+
+        }
+
 
     }
 
-    public boolean validateSolution(Integer[]solution, ArrayList<Comuna>comunas)
-    {
+    public boolean validateSolution(Integer[]solution, ArrayList<Comuna>comunas) {
         int cont;
         boolean flag;
         //VALIDAR QUE TODAS LAS ANTENAS ESTÁN ENTRELAZADAS
         for(int i=0; i<comunas.size();i++)
         {
             Comuna currentCommune = comunas.get(i);
-            if(solution[1]==1){
-
-                for (int j=0; j<currentCommune.comunasColindantes.size(); j++)
-                {
-                    flag=false;
-
-                    for(int k=0; k<comunas.size();k++)
-                    {
-                        if(comunas.get(k).id==currentCommune.comunasColindantes.get(j))
-                        {
-                            if(solution[k]==1)
-                            {
-                                flag=true;
-                            }
-                            break;
-                        }
-                    }
-                    if(!flag)
-                    {
-                        return flag;
-                    }
-                }
-            }else{
+            if(solution[1]==0){
                 cont=0;
                 for(int j=0; j<currentCommune.comunasColindantes.size();j++)
                 {

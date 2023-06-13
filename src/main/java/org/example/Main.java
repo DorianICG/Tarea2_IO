@@ -4,7 +4,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import com.opencsv.exceptions.CsvValidationException;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
+import java.util.Random;
 
 public class Main {
     public static void main(String[] args) throws CsvValidationException, FileNotFoundException {
@@ -20,60 +20,42 @@ public class Main {
         // GENERAMOS UNA SOLUCIÓN
         Integer[] bestSolution = null;
         Integer[] antSolution;
+        int sampleSizeTotal=100, sampleSizeParents=30, n=100;
         ArrayList<Integer[]>solutions = new ArrayList<>();
-        int n = 100;
         comuna.generateFirstSolution(solutions,comunas);
+
         while(n>0)
         {
-            ArrayList<Integer[]>solutionsNewGenaration = new ArrayList<>();
-
-            while(solutionsNewGenaration.size()<50)
+            ArrayList<Integer[]>solutionsNewGenaration = new ArrayList<>();                                             // ARREGLO DE SOLUCIONES NUEVA GEN
+            ArrayList<Integer[]>parents = comuna.selectParentsToCross(solutions, comunas, sampleSizeParents);           // SELECCIÓN ELITISTA DE PADRES
+            while(solutionsNewGenaration.size()<100)                                                                    // MIENTRAS NO ESTE COMPLETA LA NUEVA GEN
             {
-                Integer[] fatherSolution = comuna.bestSolution(solutions, comunas);
-                Integer[] motherSolution = comuna.secondBestSolution(solutions, comunas, fatherSolution);
-                Integer[] sonSolution = comuna.crossParents(fatherSolution, motherSolution, comunas);
+                Integer[] sonSolution = comuna.parentsRandom(parents, comunas);
                 comuna.mutateSon(sonSolution, comunas);
                 solutionsNewGenaration.add(sonSolution);
-
             }
-            comuna.getBetterSolutions(solutions, solutionsNewGenaration,comunas);
+            comuna.getBetterSolutions(solutions, solutionsNewGenaration,comunas,sampleSizeTotal);
             if(n==100){
                 bestSolution = comuna.getBestSolution(solutions, comunas);
             }else{
                 antSolution = comuna.getBestSolution(solutions,comunas);
                 if(comuna.valueCost(antSolution,comunas) < comuna.valueCost(bestSolution,comunas))
                 {
-                    System.out.println("SE MODIFICÓ "+ n );
-                    for(int i=0; i<bestSolution.length; i++)
-                    {
-                        System.out.printf("%5d",bestSolution[i]);
-                    }
-                    System.out.println();
                     bestSolution=antSolution;
                 }
             }
-
-
             n--;
         }
 
         for(int i=0; i<bestSolution.length; i++)
         {
-            System.out.printf("%5d",bestSolution[i]);
+            if(bestSolution[i]==1)
+            {
+                System.out.print(comunas.get(i).getNombreComuna()+", ");
+            }
         }
-        System.out.println();
-        for(Comuna comunita: comunas)
-        {
-            System.out.printf("%5d",comunita.getId());
-        }
-        System.out.println();
-        if(comuna.validateSolution(bestSolution,comunas))
-        {
-            DecimalFormat df = new DecimalFormat("0.00");
-            System.out.print("EL PROGRAMA FUNCIONÓ\n");
-            System.out.print(df.format(comuna.valueCost(bestSolution,comunas)));
-        }
-
+        DecimalFormat df = new DecimalFormat("0.00");
+        System.out.print(df.format(comuna.valueCost(bestSolution,comunas)));
 
     }
 
