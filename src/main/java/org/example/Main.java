@@ -22,9 +22,10 @@ public class Main {
         Integer[] antSolution;
         int sampleSizeTotal=100, sampleSizeParents=30, n=100;
         ArrayList<Integer[]>solutions = new ArrayList<>();
-        comuna.generateFirstSolution(solutions,comunas);
+        comuna.generateFirstSolution(solutions,comunas);                                        // PRIMERA SOLUCIÓN
 
-        while(n>0)
+        // INICIO DE LA METAHEURÍSTICA EN EL CICLO
+        while(n>0)                                                                              // MIENTRA EL NÚMERO DE ITERACIONES ES MAYOR A 0
         {
             ArrayList<Integer[]>solutionsNewGenaration = new ArrayList<>();                                             // ARREGLO DE SOLUCIONES NUEVA GEN
             ArrayList<Integer[]>parents = comuna.selectParentsToCross(solutions, comunas, sampleSizeParents);           // SELECCIÓN ELITISTA DE PADRES
@@ -47,15 +48,37 @@ public class Main {
             n--;
         }
 
+
+        /**
+         *      CONTAMOS TODAS LAS COMUNAS CON QUE TIENEN UNA ANTENA
+         * */
+        int contador=0;
+        for(Integer solutionInt: bestSolution){
+            if(solutionInt==1) contador++;
+        }
+
+        /**
+         *      IMPRIMIR MENSAJE
+         * */
+        System.out.print("\n-----------------------------------------------------" +
+                "----------------------------------------------------------------" +
+                "------------------------------------\n" +
+                "LA MEJORES COMUNAS PARA COLOCAR ANTENAS SON: ");
         for(int i=0; i<bestSolution.length; i++)
         {
-            if(bestSolution[i]==1)
+            if(bestSolution[i]==1 && contador>1)
             {
                 System.out.print(comunas.get(i).getNombreComuna()+", ");
+                contador--;
+            }else if(bestSolution[i]==1 && contador==1){
+                System.out.println(comunas.get(i).getNombreComuna()+".");
             }
         }
-        DecimalFormat df = new DecimalFormat("0.00");
-        System.out.print(df.format(comuna.valueCost(bestSolution,comunas)));
+        DecimalFormat df = new DecimalFormat("0.0");
+
+        System.out.print("\nCON UN COSTO TOTAL DE $"+df.format(comuna.valueCost(bestSolution,comunas))+" MMD\n" +
+                "-----------------------------------------------------------------------------------------------" +
+                "----------------------------------------------------------");
 
     }
 
