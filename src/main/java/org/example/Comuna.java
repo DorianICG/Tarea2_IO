@@ -106,7 +106,7 @@ public class Comuna {
  * */
     public Integer[] newSolution(Integer[]solution, ArrayList<Comuna>comunas){
         Random rn = new Random();                       // INICIAR RN TIPO RANDOM
-        double alfa = 0.68;                              // DAR UNA PROBABILIDAD ALFA
+        double alfa = 0.80;                              // DAR UNA PROBABILIDAD ALFA
         for (int i = 0; i < solution.length; i++)       // RECORRER EL TAMAÑO DEL ARREGLO
         {
             double beta = rn.nextDouble();

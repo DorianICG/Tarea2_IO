@@ -4,7 +4,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import com.opencsv.exceptions.CsvValidationException;
 import java.io.FileNotFoundException;
-import java.util.Random;
 
 public class Main {
     public static void main(String[] args) throws CsvValidationException, FileNotFoundException {
