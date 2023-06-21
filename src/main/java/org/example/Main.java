@@ -1,3 +1,10 @@
+/**
+ *      Integrantes:
+ *                  Dorian Canales paralelo-1
+ *                  Luis   Arce    paralelo-1
+ * */
+
+
 package org.example;
 
 import java.text.DecimalFormat;
